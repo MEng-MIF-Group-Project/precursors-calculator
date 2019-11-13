@@ -6,7 +6,7 @@
 namespace utils {
 	inline void ncout(double n, std::ostream& out = std::cout, int spacing = 8, std::string extra = "", bool nline = false) {
 		int s = 1;
-		int ni = n;
+		int ni = static_cast<int>(n);
 		
 		if (ni < 0) ++s;
 
@@ -37,7 +37,7 @@ namespace utils {
 
 	inline std::vector<std::vector<double>> power_set(std::vector<double> in) {
 		std::vector<std::vector<double>> nset;
-		const int pow_set_size = pow(2, in.size());
+		const int pow_set_size = static_cast<const int>(pow(2, in.size()));
 		for (int counter = 0; counter < pow_set_size; ++counter) {
 			std::vector<double> vset;
 			for (int j = 0; j < in.size(); j++) {

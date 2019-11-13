@@ -2,24 +2,51 @@
 
 #include "defines.h"
 
-#include "reagentdb.h"
+#include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 
-#define INPUT "input.txt"
+#include "reagentdb.h"
+#include "utils.h"
+
+#define INPUTPATH "input.txt"
+#define CONFIGPATH "config.cfg"
+#define INPUTCACHEPATH "licache.txt"
+#define WEIGHTSCACHEPATH "cwcache.txt"
 
 class Input
 {
 	struct IOdata
 	{
-		std::vector<std::string> els;
+		std::string cmd_input_stoichs, cmd_input_precursors;
+		std::vector<std::vector<double>> weights;
+		std::vector<std::string> elements;
 		std::vector<double> amounts;
+		Reagent r;
 		ReagentDB rdb;
+		double margin = 1.f / 1000;
+		int samples = 20;
+		struct {
+			bool use_input_cache = false;
+			bool recache_margin_weights = false;
+			bool csv = true;
+		} options;
 	} _self;
 
 public:
-	Input() = default;
+	Input(int argc, char** argv);
 	Input(std::string f);
 
 	void parse(std::string f);
+	void parse(std::string stoichs, std::string precursors);
+
+	//template<typename T>
+	//std::vector<std::vector<T>> load(std::string f);
+	std::vector<std::vector<double>> load(std::string f);
+
+	void validate_weights(int nulcols);
+	
+	std::pair<Eigen::MatrixXd, Eigen::VectorXd> matrix();
 
 	const IOdata& operator()() const;
 };
