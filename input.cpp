@@ -1,5 +1,7 @@
 ﻿#include "input.h"
 
+#include "statedb.h"
+
 Input::Input(int argc, char** argv)
 {
 	try {
@@ -12,6 +14,7 @@ Input::Input(int argc, char** argv)
 			("margin", boost::program_options::value<double>(), "Margin used for precision and weight generation")
 			("csv", boost::program_options::value<bool>(), "Wheter to use SQL output or CSV")
 			("samples", boost::program_options::value<int>(), "Number of point samples to take")
+			("mode", boost::program_options::value<int>(), "Switch between different calculators, 0 for stoichs, 1 for precursors")
 			("debug", "Run with debug flags on");
 		boost::program_options::variables_map vm;
 		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -24,6 +27,11 @@ Input::Input(int argc, char** argv)
 		if (vm.count("samples")) {
 			_self.samples = vm["samples"].as<int>();
 			std::cout << "Number of samples set to " << _self.samples << std::endl; 
+		}
+
+
+		if (vm.count("mode")) {
+			_self.mode = vm["mode"].as<int>();
 		}
 
 		// use input file then
@@ -40,14 +48,24 @@ Input::Input(int argc, char** argv)
 			_self.options.csv = vm["csv"].as<bool>();
 			std::cout << "Using csv was set to " << vm["csv"].as<bool>() << std::endl;
 		}
-
-		if ((!vm.count("stoichs") || !vm.count("precursors")) && _self.options.use_input_cache == false) {
-			std::cout << "Attempting to execute with no input, exiting..." << std::endl;
-			exit(-1);
+		if (_self.mode == 0) {
+			if ((!vm.count("stoichs")) && _self.options.use_input_cache == false) {
+				std::cout << "Attempting to execute with no input, exiting..." << std::endl;
+				exit(-1);
+			}
+			else if (vm.count("stoichs")) {
+				_self.cmd_input_stoichs = vm["stoichs"].as<std::string>();
+			}
 		}
-		else if (vm.count("stoichs") && vm.count("precursors")) {
-			_self.cmd_input_stoichs = vm["stoichs"].as<std::string>();
-			_self.cmd_input_precursors = vm["precursors"].as<std::string>();
+		else if (_self.mode == 1) {
+			if ((!vm.count("stoichs") || !vm.count("precursors")) && _self.options.use_input_cache == false) {
+				std::cout << "Attempting to execute with no input, exiting..." << std::endl;
+				exit(-1);
+			}
+			else if (vm.count("stoichs") && vm.count("precursors")) {
+				_self.cmd_input_stoichs = vm["stoichs"].as<std::string>();
+				_self.cmd_input_precursors = vm["precursors"].as<std::string>();
+			}
 		}
 	}
 	catch (std::exception& e) {
@@ -57,13 +75,24 @@ Input::Input(int argc, char** argv)
 		std::cerr << "Exception of unknown type!" << std::endl;
 	}
 	std::cout << "Recache margin weights was set to " << _self.options.recache_margin_weights << std::endl;
+	if (_self.mode == 0) {
+		if (_self.options.use_input_cache == true) {
+			parse(INPUTCACHEPATH);
+		}
+		else {
+			parse(_self.cmd_input_stoichs, "");
+		}
+	}
+	else if (_self.mode == 1) {
+		if (_self.options.use_input_cache == true) {
+			parse(INPUTCACHEPATH);
+		}
+		else {
+			parse(_self.cmd_input_stoichs, _self.cmd_input_precursors);
+		}
+	}
 
-	if (_self.options.use_input_cache == true) {
-		parse(INPUTCACHEPATH);
-	}
-	else {
-		parse(_self.cmd_input_stoichs, _self.cmd_input_precursors);
-	}
+	std::cout << "Finishing parsing cmline input" << std::endl;
 }
 
 Input::Input(std::string f) {
@@ -135,6 +164,14 @@ void Input::parse(std::string f) {
 		}
 		_self.rdb.insert(reagent);
 	}
+
+	if (_self.mode == 0) {
+		for (auto e : _self.r()) {
+			Reagent re;
+			re.insert(e);
+			_self.rdb.insert(re);
+		}
+	}
 }
 
 void Input::parse(std::string stoichs, std::string precursors)
@@ -190,6 +227,14 @@ void Input::parse(std::string stoichs, std::string precursors)
 		}
 		_self.rdb.insert(reagent);
 	}
+
+	if (_self.mode == 0) {
+		for (auto e : _self.r()) {
+			Reagent re;
+			re.insert(e);
+			_self.rdb.insert(re);
+		}
+	}
 }
 
 void Input::validate_weights(int nulcols) {
@@ -219,7 +264,7 @@ void Input::validate_weights(int nulcols) {
 		std::cout << "Couldn't find margin weights file" << std::endl;
 	}
 	if (_self.options.recache_margin_weights == true) {
-		std::cout << "Recaching margin weights... " << std::endl;
+		//std::cout << "Recaching margin weights... " << std::endl;
 		std::vector<double> fvals;
 		for (double i = 0; i <= 1 + _self.margin / 2; i += _self.margin) {
 			fvals.push_back(i);
@@ -244,7 +289,7 @@ void Input::validate_weights(int nulcols) {
 			g << "\n";
 		}
 		g.close();
-		std::cout << "Margin weights recached." << std::endl;
+		//std::cout << "Margin weights recached." << std::endl;
 
 		// adjust config values;
 		for (int i = 0; i < confvals.size(); ++i) {
@@ -274,45 +319,71 @@ void Input::validate_weights(int nulcols) {
 	}
 }
 
-std::pair<Eigen::MatrixXd, Eigen::VectorXd> Input::matrix()
+std::vector<std::pair<Eigen::MatrixXd, Eigen::VectorXd>> Input::matrix()
 {
-	const char var = 'A';
-	std::vector<std::string> vn;
-	for (int i = 0; i < _self.rdb().size(); ++i) {
-		vn.push_back(std::string(1, var + i));
-	}
+	if (_self.mode == 0) {
+		std::vector<std::pair<Eigen::MatrixXd, Eigen::VectorXd>> temp;
+		StateDB sdb;
+		const auto coefficients = sdb.populate(_self.elements);
 
-	std::vector<std::vector<std::pair<std::string, double>>> lhs, rhs;
-	for (int i = 0; i < _self.r().size(); ++i) {
-		std::vector<std::pair<std::string, double>> lhs_row;
-		for (int j = 0; j < _self.rdb().size(); ++j) {
-			double val = 0;
-			for (auto &k : _self.rdb(j)()) {
-				if (k().n == _self.r()[i]().n) {
-					val = k().q;
-					// TODO: think about this break
-					break;
-				}
+		for (auto c : coefficients) {
+			Eigen::MatrixXd A(2, _self.r().size());
+			Eigen::VectorXd B(2);
+			Eigen::RowVectorXd rv1(2), rv2(2);
+			for (int j = 0; j < _self.r().size(); ++j) {
+				rv1(j) = _self.amounts[j];
+				rv2(j) = c[j];
 			}
 
-			lhs_row.push_back({ vn[j], val });
-		}
-		lhs.push_back(lhs_row);
-		rhs.push_back({ {"RHS", _self.r()[i]().q} });
-	}
+			A << rv1, rv2;
+			B << 1, 0;
 
-	Eigen::MatrixXd A(lhs.size(), lhs[0].size());
-	Eigen::VectorXd B(lhs.size());
-
-	for (int i = 0; i < _self.r().size(); ++i) {
-		for (int j = 0; j < _self.rdb().size(); ++j) {
-			A(i, j) = lhs[i][j].second;
+			temp.push_back({ A, B });
 		}
 
-		B(i) = _self.r()[i]().q;
+		return temp;
 	}
+	else if (_self.mode == 1){
+		const char var = 'A';
+		std::vector<std::string> vn;
+		for (int i = 0; i < _self.rdb().size(); ++i) {
+			vn.push_back(std::string(1, var + i));
+		}
 
-	return {A, B};
+		std::vector<std::vector<std::pair<std::string, double>>> lhs, rhs;
+		for (int i = 0; i < _self.r().size(); ++i) {
+			std::vector<std::pair<std::string, double>> lhs_row;
+			for (int j = 0; j < _self.rdb().size(); ++j) {
+				double val = 0;
+				for (auto &k : _self.rdb(j)()) {
+					if (k().n == _self.r()[i]().n) {
+						val = k().q;
+						// TODO: think about this break
+						break;
+					}
+				}
+
+				lhs_row.push_back({ vn[j], val });
+			}
+			lhs.push_back(lhs_row);
+			rhs.push_back({ {"RHS", _self.r()[i]().q} });
+		}
+
+		Eigen::MatrixXd A(lhs.size(), lhs[0].size());
+		Eigen::VectorXd B(lhs.size());
+
+		for (int i = 0; i < _self.r().size(); ++i) {
+			for (int j = 0; j < _self.rdb().size(); ++j) {
+				A(i, j) = lhs[i][j].second;
+			}
+
+			B(i) = _self.r()[i]().q;
+		}
+
+		return { { A, B } };
+	}
+	
+	return {};
 }
 
 const Input::IOdata& Input::operator()() const {

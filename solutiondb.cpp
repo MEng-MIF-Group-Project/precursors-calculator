@@ -20,7 +20,7 @@ void SolutionDB::insert(Solution& solution)
 void SolutionDB::insert(Eigen::VectorXd vec)
 {
 	Solution s(vec);
-	_self[s.key()] = s;
+	insert(s);
 }
 
 void SolutionDB::remove(std::string key)

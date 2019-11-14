@@ -22,6 +22,8 @@ class Input
 		std::vector<std::vector<double>> weights;
 		std::vector<std::string> elements;
 		std::vector<double> amounts;
+		// 0 for stoichs, 1 for precursors
+		int mode = 1;
 		Reagent r;
 		ReagentDB rdb;
 		double margin = 1.f / 1000;
@@ -46,7 +48,7 @@ public:
 
 	void validate_weights(int nulcols);
 	
-	std::pair<Eigen::MatrixXd, Eigen::VectorXd> matrix();
+	std::vector<std::pair<Eigen::MatrixXd, Eigen::VectorXd>> matrix();
 
 	const IOdata& operator()() const;
 };
