@@ -329,17 +329,24 @@ std::vector<std::pair<Eigen::MatrixXd, Eigen::VectorXd>> Input::matrix()
 		for (auto c : coefficients) {
 			Eigen::MatrixXd A(2, _self.r().size());
 			Eigen::VectorXd B(2);
-			Eigen::RowVectorXd rv1(2), rv2(2);
+			Eigen::RowVectorXd rv1(_self.r().size()), rv2(_self.r().size());
+			//std::cout << "States:\n";
 			for (int j = 0; j < _self.r().size(); ++j) {
 				rv1(j) = _self.amounts[j];
 				rv2(j) = c[j];
+				//std::cout << c[j] << " ";
 			}
+			//std::cout << std::endl << std::endl;
 
 			A << rv1, rv2;
 			B << 1, 0;
 
+			//std::cout << std::endl << A << std::endl << std::endl;
+
 			temp.push_back({ A, B });
 		}
+
+		//std::cout << "Done processing matrices" << std::endl; 
 
 		return temp;
 	}

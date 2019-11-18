@@ -16,6 +16,7 @@
 
 class Input
 {
+public:
 	struct IOdata
 	{
 		std::string cmd_input_stoichs, cmd_input_precursors;
@@ -33,7 +34,9 @@ class Input
 			bool recache_margin_weights = false;
 			bool csv = true;
 		} options;
-	} _self;
+	};
+private:
+	IOdata _self;
 
 public:
 	Input(int argc, char** argv);

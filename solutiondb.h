@@ -2,6 +2,7 @@
 
 #include "solution.h"
 
+#include "input.h"
 #include "reagentdb.h"
 
 #include <map>
@@ -19,5 +20,5 @@ public:
 
 	void trim(int score);
 
-	void exportcsv(Reagent r, ReagentDB rdb, bool incache = true);
+	void exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io);
 };

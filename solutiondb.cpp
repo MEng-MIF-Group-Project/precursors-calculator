@@ -41,14 +41,15 @@ void SolutionDB::trim(int score)
 	}
 }
 
-void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, bool incache)
+void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io)
 {
 	auto start_time = std::chrono::high_resolution_clock::now();
+	std::string filename = std::to_string(io.mode);
+	filename += r.str() + ".csv";
 
-	std::ofstream g(r.str() + ".csv");
+	std::ofstream g(filename);
 
-	g << "Key,";
-	std::string header = "";
+	std::string header = "Key,";
 	for (auto r : rdb()) {
 		header += r.str() + ",";
 	}
@@ -68,7 +69,7 @@ void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, bool incache)
 	}
 	g.close();
 
-	if (incache == false) {
+	if (io.options.use_input_cache == false) {
 		std::ofstream icg(INPUTCACHEPATH);
 		icg << "Reserved" << std::endl;
 		icg << r.str() << std::endl;
