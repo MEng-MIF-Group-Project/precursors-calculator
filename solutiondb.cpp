@@ -69,8 +69,14 @@ void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io)
 			double mass = 0;
 			for (int i = 0; i < ra.size(); ++i) {
 				auto r = rdb()[i];
-				name += r.str() + std::to_string(ra[i].first);
-				mass += r.mass() * ra[i].first;
+				if (ra[i].first > 0) {
+					name += r.str();
+					mass += r.mass() * ra[i].first;
+				}
+				
+				if (ra[i].first >= 2) {
+					name += std::to_string(ra[i].first);
+				}
 			}
 			g << name << ",";
 			g << mass << ",";
