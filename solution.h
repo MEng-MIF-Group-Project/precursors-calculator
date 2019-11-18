@@ -5,6 +5,7 @@
 
 class Solution
 {
+	std::string _tag;
 	std::vector<double> _self;
 	std::vector<std::pair<int, int>> _selfr;
 	std::string _key;
@@ -22,6 +23,8 @@ public:
 
 	std::string key();
 	std::vector<std::pair<int, int>> rational();
+	void stringify();
+	std::string str();
 	int score();
 	
 	void validate(int precision = 3, int maxdenum = 99);

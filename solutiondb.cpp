@@ -50,6 +50,9 @@ void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io)
 	std::ofstream g(filename);
 
 	std::string header = "Key,";
+	if (io.mode == 0) {
+		header += "Name,Mass,";
+	}
 	for (auto r : rdb()) {
 		header += r.str() + ",";
 	}
@@ -60,6 +63,20 @@ void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io)
 
 	for (auto s : _self) {
 		g << s.first << ",";
+		std::string name = "";
+		if (io.mode == 0) {
+			auto ra = s.second.rational();
+			double mass = 0;
+			for (int i = 0; i < ra.size(); ++i) {
+				auto r = rdb()[i];
+				name += r.str() + std::to_string(ra[i].first);
+				mass += r.mass() * ra[i].first;
+			}
+			g << name << ",";
+			g << mass << ",";
+
+			//std::cout << "Name: " << name << std::endl;
+		}
 		for (int i = 0; i < s.second().size() - 1; ++i) {
 			g << s.second()[i] << ",";
 		}

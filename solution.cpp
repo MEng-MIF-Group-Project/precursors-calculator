@@ -60,6 +60,18 @@ std::vector<std::pair<int, int>> Solution::rational()
 	return _selfr;
 }
 
+void Solution::stringify()
+{
+	for (auto& s : _self) {
+
+	}
+}
+
+std::string Solution::str()
+{
+	return _tag;
+}
+
 int Solution::score()
 {
 	return _score;
