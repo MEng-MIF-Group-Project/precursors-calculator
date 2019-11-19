@@ -69,13 +69,14 @@ void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io)
 			double mass = 0;
 			for (int i = 0; i < ra.size(); ++i) {
 				auto r = rdb()[i];
-				if (ra[i].first > 0) {
+				int ratio = boost::math::round<int>(static_cast<double>(ra[i].first * s.second.score()) / static_cast<double>(ra[i].second));
+				if (ratio > 0) {
 					name += r.str();
-					mass += r.mass() * ra[i].first;
+					mass += r.mass() * ratio;
 				}
 				
-				if (ra[i].first >= 2) {
-					name += std::to_string(ra[i].first);
+				if (ratio >= 2) {
+					name += std::to_string(ratio);
 				}
 			}
 			g << name << ",";
