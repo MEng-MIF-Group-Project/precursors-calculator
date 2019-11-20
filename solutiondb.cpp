@@ -61,7 +61,6 @@ void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io)
 	g << ",Score";
 	g << std::endl;
 
-	std::cout << _self.size() << std::endl;
 	for (auto s : _self) {
 		g << s.first << ",";
 		std::string name = "";

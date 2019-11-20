@@ -179,7 +179,40 @@ void Input::parse(std::string stoichs, std::string precursors)
 	boost::char_separator<char> s0(" ");
 	boost::char_separator<char> s1(":");
 	boost::tokenizer<boost::char_separator<char>> t1(stoichs, s0);
+	
+	{
+		boost::regex re("[A-Z][a-z]?");
+		boost::sregex_token_iterator ti(stoichs.begin(), stoichs.end(), re, { -1, 0 });
+		std::vector<std::string> tokens;
+		std::remove_copy_if(ti, boost::sregex_token_iterator(), std::back_inserter(tokens), [](std::string const &s) { return s.empty(); });
+		int last_type = 2;
+		for (auto& p : tokens) {
+			if (std::isdigit(p[0])) {
+				// change this
+				std::stringstream ss(p);
+				int amount;
+				ss >> amount;
 
+				_self.amounts.push_back(amount);
+				last_type = 2;
+			}
+			else {
+				if (last_type == 1) {
+					_self.amounts.push_back(1);
+				}
+				_self.elements.push_back(p);
+				last_type = 1;
+			}
+		}
+		if (last_type == 1) {
+			_self.amounts.push_back(1);
+		}
+
+		for (int i = 0; i < _self.elements.size(); ++i) {
+			_self.r.insert(Element(_self.elements[i], _self.amounts[i]));
+		}
+	}
+	/*
 	// Retrieve name of elements
 	for (const auto& t : t1) {
 		boost::tokenizer<boost::char_separator<char>> t2_0(t, s1);
@@ -204,9 +237,11 @@ void Input::parse(std::string stoichs, std::string precursors)
 			}
 		}
 	}
+	*/
 
 	boost::tokenizer<boost::char_separator<char>> t2(precursors, s0);
 	for (const auto& t : t2) {
+		/*/
 		boost::tokenizer<boost::char_separator<char>> t2_0(t, s1);
 		Reagent reagent;
 		for (const auto& m : t2_0) {
@@ -225,6 +260,42 @@ void Input::parse(std::string stoichs, std::string precursors)
 				reagent.insert(Element(n, c));
 			}
 		}
+		_self.rdb.insert(reagent);
+		*/
+		Reagent reagent;
+		boost::regex re("[A-Z][a-z]?");
+		boost::sregex_token_iterator ti(t.begin(), t.end(), re, { -1, 0 });
+
+		std::vector<std::string> tokens;
+		std::remove_copy_if(ti, boost::sregex_token_iterator(), std::back_inserter(tokens), [](std::string const &s) { return s.empty(); });
+		int last_type = 2;
+		std::vector<std::string> elements;
+		std::vector<int> amounts;
+		for (auto& p : tokens) {
+			if (std::isdigit(p[0])) {
+				// change this
+				std::stringstream ss(p);
+				int amount;
+				ss >> amount;
+
+				amounts.push_back(amount);
+				last_type = 2;
+			}
+			else {
+				if (last_type == 1) {
+					amounts.push_back(1);
+				}
+				elements.push_back(p);
+				last_type = 1;
+			}
+		}
+		if (last_type == 1) {
+			amounts.push_back(1);
+		}
+		for (int i = 0; i < elements.size(); ++i) { 
+			reagent.insert(Element(elements[i], amounts[i]));
+		}
+
 		_self.rdb.insert(reagent);
 	}
 

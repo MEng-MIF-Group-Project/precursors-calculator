@@ -5,6 +5,7 @@
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string_regex.hpp>
 
 #include "reagentdb.h"
 #include "utils.h"
