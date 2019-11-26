@@ -34,7 +34,7 @@ public:
 		return s;
 	}
 
-	double mass() const {
-		return _mass;
+	double mass(double qualifier = 1.0f) const {
+		return qualifier * _mass;
 	}
 };

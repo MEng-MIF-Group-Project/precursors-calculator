@@ -82,6 +82,6 @@ void Solution::validate(int precision, int maxdenum)
 	for (auto& s : _self) {
 		auto ra = math::rational(s, maxdenum);
 		double y = ((double)ra.first / (double)ra.second);
-		s = math::round<double>(y, precision);
+		s = y;// math::round<double>(y, precision);
 	}
 }

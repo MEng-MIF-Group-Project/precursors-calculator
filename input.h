@@ -14,6 +14,9 @@
 #define CONFIGPATH "config.cfg"
 #define INPUTCACHEPATH "licache.txt"
 #define WEIGHTSCACHEPATH "cwcache.txt"
+#define MIN_WEIGHT 5 / 1000.f // 5mg
+
+//#define DEBUG_INPUT ON
 
 class Input
 {
@@ -50,7 +53,7 @@ public:
 	//std::vector<std::vector<T>> load(std::string f);
 	std::vector<std::vector<double>> load(std::string f);
 
-	void validate_weights(int nulcols);
+	void validate_weights(int nulcols, bool mass_weights = false, bool constrain_space = false);
 	
 	std::vector<std::pair<Eigen::MatrixXd, Eigen::VectorXd>> matrix();
 

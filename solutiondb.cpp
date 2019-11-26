@@ -53,8 +53,14 @@ void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io)
 	if (io.mode == 0) {
 		header += "Name,Mass,";
 	}
+	else {
+		header += "Name,In_Mass,";
+	}
 	for (auto r : rdb()) {
 		header += r.str() + ",";
+		if (io.mode == 1) {
+			header += r.str() + "_Mass,";
+		}
 	}
 	header.erase(header.size() - 1);
 	g << header;
@@ -84,11 +90,21 @@ void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io)
 
 			//std::cout << "Name: " << name << std::endl;
 		}
+		else {
+			g << r.str() << ",";
+			g << r.mass() << ",";
+		}
 		for (int i = 0; i < s.second().size() - 1; ++i) {
 			g << s.second()[i] << ",";
+			if (io.mode == 1) {
+				g << (rdb()[i].mass() * s.second()[i]) << ",";
+			}
 		}
-		g << s.second()[s.second().size() - 1];
-		g << "," << s.second.score();
+		g << s.second()[s.second().size() - 1] << ","; 
+		if (io.mode == 1) {
+			g << (rdb()[s.second().size() - 1].mass() * s.second()[s.second().size() - 1]) << ",";
+		}
+		g << s.second.score();
 		g << std::endl;
 	}
 	g.close();
