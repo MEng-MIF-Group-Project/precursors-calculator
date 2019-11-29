@@ -11,6 +11,7 @@
 class Reagent
 {
 	std::vector<Element> _self;
+	std::string _tag;
 	double _mass = 0;
 
 public:
@@ -22,6 +23,31 @@ public:
 
 	void insert(const Element& element);
 	void remove(int idx);
+
+	std::string tag() {
+		std::string s;
+
+		std::sort(_self.begin(), _self.end(), [](const auto& e1, const auto& e2) {
+			double a, b;
+			std::stringstream(e1().z) >> a;
+			std::stringstream(e2().z) >> b;
+
+			return (a < b);
+		});
+
+		for (auto &el : _self) {
+			if (el().q != 0) {
+				s += el().n;
+				// change this if you want to see quantity on 1
+				if (el().q > 1) {
+					s += std::to_string(el().q);
+				}
+			}
+		}
+
+
+		return s;
+	}
 
 	std::string str() {
 		std::string s;
@@ -35,6 +61,7 @@ public:
 		});
 		
 		for (auto &el : _self) {
+			
 			if (el().q != 0) {
 				s += el().n;
 				// change this if you want to see quantity on 1

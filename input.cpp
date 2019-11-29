@@ -321,6 +321,12 @@ void Input::parse(std::string stoichs, std::string precursors)
 			re.insert(e);
 			_self.rdb.insert(re);
 		}
+
+		for (auto rs : _self.rdb()) {
+			rs.str();
+		}
+		
+		_self.r.str();
 	}
 }
 

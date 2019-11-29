@@ -72,44 +72,61 @@ void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io)
 	g << std::endl;
 
 	for (auto s : _self) {
-		g << s.first << ",";
+		std::stringstream line;
+		bool bad_q = false;
+		line << s.first << ",";
 		std::string name = "";
+
 		if (io.mode == 0) {
 			auto ra = s.second.rational();
 			double mass = 0;
 			for (int i = 0; i < ra.size(); ++i) {
 				auto r = rdb()[i];
+				bool in_use = false;
 				int ratio = boost::math::round<int>(static_cast<double>(ra[i].first * s.second.score()) / static_cast<double>(ra[i].second));
 				if (ratio > 0) {
 					name += r.str();
 					mass += r.mass() * ratio;
-				}
-				
-				if (ratio >= 2) {
-					name += std::to_string(ratio);
+
+					if (ratio >= 2) {
+						name += std::to_string(ratio);
+
+						if (ratio >= 20) {
+							bad_q = true;
+						}
+					}
+					
+					name += "-";
 				}
 			}
-			g << name << ",";
-			g << mass << ",";
+			line << name.substr(0, name.size() - 1) << ",";
+			line << mass << ",";
 
 			//std::cout << "Name: " << name << std::endl;
 		}
 		else {
-			g << r.str() << ",";
-			g << r.mass() * mult << ",";
+			line << r.str() << ",";
+			line << r.mass() * mult << ",";
 		}
+		if (bad_q == true)
+			continue;
+
 		for (int i = 0; i < s.second().size() - 1; ++i) {
-			g << s.second()[i] << ",";
+			line << s.second()[i] << ",";
 			if (io.mode == 1) {
-				g << (rdb()[i].mass() * s.second()[i] * mult) << ",";
+				line << (rdb()[i].mass() * s.second()[i] * mult) << ",";
 			}
 		}
-		g << s.second()[s.second().size() - 1] << ","; 
+		line << s.second()[s.second().size() - 1] << ",";
 		if (io.mode == 1) {
-			g << (rdb()[s.second().size() - 1].mass() * s.second()[s.second().size() - 1]) * mult << ",";
+			line << (rdb()[s.second().size() - 1].mass() * s.second()[s.second().size() - 1]) * mult << ",";
 		}
-		g << s.second.score();
-		g << std::endl;
+		line << s.second.score();
+		line << std::endl;
+
+		if (bad_q == false) {
+			g << line.str();
+		}
 	}
 	g.close();
 
