@@ -8,10 +8,11 @@ Element::Element(const ElementData& d) {
 }
 
 Element::Element(std::string s, double i, int e) {
+	_self = ElementDB::map()[s]();
+
 	_self.n = s;
 	_self.q = i;
 	_self.s = e;
-	_self.mass = ElementDB::map()[s]().mass;
 }
 
 const ElementData& Element::operator()() const {

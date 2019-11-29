@@ -33,6 +33,7 @@ public:
 		ReagentDB rdb;
 		double margin = 1.f / 1000;
 		int samples = 20;
+		double dmass = 0.5; // 0.5grams
 		struct {
 			bool use_input_cache = false;
 			bool recache_margin_weights = false;

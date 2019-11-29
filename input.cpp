@@ -18,6 +18,7 @@ Input::Input(int argc, char** argv)
 			("csv", boost::program_options::value<bool>(), "Wheter to use SQL output or CSV")
 			("samples", boost::program_options::value<int>(), "Number of point samples to take")
 			("mode", boost::program_options::value<int>(), "Switch between different calculators, 0 for stoichs, 1 for precursors")
+			("dmass", boost::program_options::value<double>(), "Desired mass of solution")
 			("debug", "Run with debug flags on");
 		boost::program_options::variables_map vm;
 		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -31,7 +32,10 @@ Input::Input(int argc, char** argv)
 			_self.samples = vm["samples"].as<int>();
 			std::cout << "Number of samples set to " << _self.samples << std::endl; 
 		}
-
+		if (vm.count("dmass")) {
+			_self.dmass = vm["dmass"].as<double>();
+			std::cout << "Desired mass set to " << _self.dmass << std::endl;
+		}
 
 		if (vm.count("mode")) {
 			_self.mode = vm["mode"].as<int>();
@@ -351,10 +355,11 @@ void Input::validate_weights(int nulcols, bool mass_weights, bool constrain_spac
 		if (mass_weights == false) {
 			//std::cout << "Recaching margin weights... " << std::endl;
 			std::vector<double> fvals;
-			for (double i = 0; i <= 1 + _self.margin / 2; i += _self.margin) {
+			for (double i = 0; i < 1; i += _self.margin) {
 				fvals.push_back(i);
 				//std::cout << i << " ";
 			}
+			fvals.push_back(1);
 			//std::cout << std::endl;
 
 			//std::cout << "FVALS: " << fvals.size() << std::endl;
@@ -367,10 +372,12 @@ void Input::validate_weights(int nulcols, bool mass_weights, bool constrain_spac
 
 			// doing this the ugly way
 			std::vector<double> fvals;
-			for (double i = min_mass_ratio; i <= 1; i += _self.margin) {
+			fvals.push_back(0);
+			for (double i = min_mass_ratio; i < 1; i += _self.margin) {
 				fvals.push_back(i);
 				//std::cout << i << " ";
 			}
+			fvals.push_back(1);
 			_self.weights = utils::combination_k(fvals, nulcols);
 
 			// trim uneeded parts
