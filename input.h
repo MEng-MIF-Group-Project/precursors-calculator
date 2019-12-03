@@ -23,16 +23,20 @@ class Input
 public:
 	struct IOdata
 	{
+		// member
 		std::string cmd_input_stoichs, cmd_input_precursors;
 		std::vector<std::vector<double>> weights;
 		std::vector<std::string> elements;
 		std::vector<double> amounts;
 		// 0 for stoichs, 1 for precursors
-		int mode = 1;
+		int mode = 0;
 		Reagent r;
 		ReagentDB rdb;
+
+		// property
 		double margin = 1.f / 1000;
 		int samples = 20;
+		int drange = 10;
 		double dmass = 0.5; // 0.5grams
 		struct {
 			bool use_input_cache = false;
@@ -54,7 +58,7 @@ public:
 	//std::vector<std::vector<T>> load(std::string f);
 	std::vector<std::vector<double>> load(std::string f);
 
-	void validate_weights(int nulcols, bool mass_weights = false, bool constrain_space = false);
+	void validate_weights(int nulcols);
 	
 	std::vector<std::pair<Eigen::MatrixXd, Eigen::VectorXd>> matrix();
 

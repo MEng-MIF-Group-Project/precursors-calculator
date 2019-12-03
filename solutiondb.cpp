@@ -95,9 +95,10 @@ void SolutionDB::exportcsv(Reagent r, ReagentDB rdb, Input::IOdata io)
 							bad_q = true;
 						}
 					}
-					
+
 					name += "-";
 				}
+				
 			}
 			line << name.substr(0, name.size() - 1) << ",";
 			line << mass << ",";

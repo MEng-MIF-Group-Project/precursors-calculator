@@ -162,4 +162,18 @@ namespace utils {
 			std::cout << std::endl;
 		} while (increase(bitset));
 	}
+
+	template<typename V, typename Callable>
+	void for_each_combination(V &v, size_t gp_sz, Callable f) {
+		V gp(gp_sz);
+		auto total_n = std::pow(v.size(), gp.size());
+		for (auto i = 0; i < total_n; ++i) {
+			auto n = i;
+			for (auto j = 0ul; j < gp.size(); ++j) {
+				gp[gp.size() - j - 1] = v[n % v.size()];
+				n /= v.size();
+			}
+			f(gp);
+		}
+	}
 }

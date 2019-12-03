@@ -1,8 +1,7 @@
 ﻿#include "input.h"
-
 #include "statedb.h"
 
-#include <random>
+//#include <random>
 
 Input::Input(int argc, char** argv)
 {
@@ -19,6 +18,7 @@ Input::Input(int argc, char** argv)
 			("samples", boost::program_options::value<int>(), "Number of point samples to take")
 			("mode", boost::program_options::value<int>(), "Switch between different calculators, 0 for stoichs, 1 for precursors")
 			("dmass", boost::program_options::value<double>(), "Desired mass of solution")
+			("drange", boost::program_options::value<int>(), "Denominator range")
 			("debug", "Run with debug flags on");
 		boost::program_options::variables_map vm;
 		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -35,6 +35,10 @@ Input::Input(int argc, char** argv)
 		if (vm.count("dmass")) {
 			_self.dmass = vm["dmass"].as<double>();
 			std::cout << "Desired mass set to " << _self.dmass << std::endl;
+		}
+		if (vm.count("drange")) {
+			_self.drange = vm["drange"].as<int>();
+			std::cout << "drange set to " << _self.drange << std::endl;
 		}
 
 		if (vm.count("mode")) {
@@ -85,7 +89,9 @@ Input::Input(int argc, char** argv)
 	_self.samples = 100;
 	_self.cmd_input_stoichs = "LiAlSO";
 	_self.cmd_input_precursors = "Li2S Al2S3 Al2O3 LiAlO2 Li2O";
-	_self.margin = 0.003;
+	//_self.margin = 0.003;
+	_self.dmass = 0.5;
+	_self.drange = 20;
 	_self.options.recache_margin_weights = true;
 	//_self.options.use_input_cache = true;
 	_self.mode = 1;
@@ -330,7 +336,7 @@ void Input::parse(std::string stoichs, std::string precursors)
 	}
 }
 
-void Input::validate_weights(int nulcols, bool mass_weights, bool constrain_space) {
+void Input::validate_weights(int nulcols) {
 	std::ifstream fconfig(CONFIGPATH);
 	std::string confline;
 	std::vector<std::pair<std::string, double>> confvals;
@@ -358,7 +364,24 @@ void Input::validate_weights(int nulcols, bool mass_weights, bool constrain_spac
 	}
 
 	if (_self.options.recache_margin_weights == true) {
-		if (mass_weights == false) {
+		std::vector<double> fvals;
+		fvals.push_back(1);
+		for (int i = 1; i <= _self.drange; ++i) {
+			fvals.push_back(1.f / i);
+		}
+		fvals.push_back(0);
+		//std::cout << std::endl;
+
+		//std::cout << "FVALS: " << fvals.size() << std::endl;
+
+		std::vector<std::vector<double>> i_am_speed;
+		utils::for_each_combination(fvals, nulcols, [&](std::vector<double> &gp) {
+			i_am_speed.push_back(gp);
+		});
+		_self.weights = i_am_speed;
+		//auto nprk = utils::permutation_mapk(fvals, K.cols());
+		//_self.weights = utils::combination_k(fvals, nulcols);
+		/*if (mass_weights == false) {
 			//std::cout << "Recaching margin weights... " << std::endl;
 			std::vector<double> fvals;
 			for (double i = 0; i < 1; i += _self.margin) {
@@ -372,8 +395,8 @@ void Input::validate_weights(int nulcols, bool mass_weights, bool constrain_spac
 
 			//auto nprk = utils::permutation_mapk(fvals, K.cols());
 			_self.weights = utils::combination_k(fvals, nulcols);
-		}
-		else {
+		}*/
+		/*else {
 			double min_mass_ratio = 1.f / _self.r.mass();
 
 			// doing this the ugly way
@@ -387,7 +410,7 @@ void Input::validate_weights(int nulcols, bool mass_weights, bool constrain_spac
 			_self.weights = utils::combination_k(fvals, nulcols);
 
 			// trim uneeded parts
-			/*for (int i = 0; i < min_weights.size(); ++i) {
+			for (int i = 0; i < min_weights.size(); ++i) {
 				for (auto it = _self.weights.begin(); it != _self.weights.end();) {
 					if ((*it)[i] < min_weights[i]) {
 						it = _self.weights.erase(it);
@@ -396,13 +419,23 @@ void Input::validate_weights(int nulcols, bool mass_weights, bool constrain_spac
 						++it;
 					}
 				}
-			}*/
-		}
+			}
+		}*/
 		//prk = utils::permutation_mapk(fvals, K.cols());
 
 		std::ofstream g(WEIGHTSCACHEPATH);
 		//std::cout << "Contrain space was set to: " << constrain_space << std::endl;
-		if (constrain_space == false) {
+		for (auto& cv : _self.weights) {
+			for (auto cvv : cv) {
+				g << cvv << " ";
+			}
+			g << "\n";
+			for (int i = static_cast<int>(cv.size()) - 1; i >= 0; --i) {
+				g << cv[i] << " ";
+			}
+			g << "\n";
+		}
+		/*if (constrain_space == false) {
 			for (auto& cv : _self.weights) {
 				for (auto cvv : cv) {
 					g << cvv << " ";
@@ -413,8 +446,8 @@ void Input::validate_weights(int nulcols, bool mass_weights, bool constrain_spac
 				}
 				g << "\n";
 			}
-		}
-		else {
+		}*/
+		/*else {
 			std::random_device dev; // seed
 			std::default_random_engine rng(dev());
 			std::uniform_int_distribution<int> uniform_distribution(0, _self.weights.size());
@@ -458,7 +491,7 @@ void Input::validate_weights(int nulcols, bool mass_weights, bool constrain_spac
 				}
 				g << "\n";
 			}
-		}
+		}*/
 		g.close();
 		//std::cout << "Margin weights recached." << std::endl;
 
