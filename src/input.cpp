@@ -8,6 +8,8 @@ Input::Input(int argc, char** argv)
 #ifndef DEBUG_INPUT
 	try {
 		boost::program_options::options_description desc("Allowed options");
+		boost::program_options::variables_map vm;
+		
 		desc.add_options()
 			("help", "Show command and syntax usage")
 			("stoichs", boost::program_options::value<std::string>(), "Stoichiometry of the desired elements")
@@ -19,10 +21,12 @@ Input::Input(int argc, char** argv)
 			("mode", boost::program_options::value<int>(), "Switch between different calculators, 0 for stoichs, 1 for precursors")
 			("dmass", boost::program_options::value<double>(), "Desired mass of solution")
 			("drange", boost::program_options::value<int>(), "Denominator range")
-			("debug", "Run with debug flags on");
-		boost::program_options::variables_map vm;
+			("mweights", boost::program_options::value<bool>(), "Turn on/off mirrored weights")
+			("debug", boost::program_options::value<bool>(), "Run with debug flags on");
+
 		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
 		boost::program_options::notify(vm);
+
 
 		if (vm.count("help")) {
 			std::cout << desc << std::endl;
@@ -55,10 +59,22 @@ Input::Input(int argc, char** argv)
 			_self.margin = vm["margin"].as<double>();
 			_self.options.recache_margin_weights = true;
 		}
+
 		if (vm.count("csv")) {
 			_self.options.csv = vm["csv"].as<bool>();
 			std::cout << "Using csv was set to " << vm["csv"].as<bool>() << std::endl;
 		}
+
+		if (vm.count("mweights")) {
+			_self.mweights = vm["mweights"].as<bool>();
+			std::cout << "Mirrored weights was set to " << _self.mweights << std::endl;
+		}
+
+		if (vm.count("debug")) {
+			_self.debug = vm["debug"].as<bool>();
+			std::cout << "Debug mode was set to " << _self.debug << std::endl;
+		}
+
 		if (_self.mode == 0) {
 			if ((!vm.count("stoichs")) && _self.options.use_input_cache == false) {
 				std::cout << "Attempting to execute with no input, exiting..." << std::endl;
@@ -295,10 +311,8 @@ void Input::parse(std::string stoichs, std::string precursors)
 		std::vector<int> amounts;
 		for (auto& p : tokens) {
 			if (std::isdigit(p[0])) {
-				// change this
-				std::stringstream ss(p);
 				int amount;
-				ss >> amount;
+				std::stringstream(p) >> amount;
 
 				amounts.push_back(amount);
 				last_type = 2;
@@ -336,7 +350,7 @@ void Input::parse(std::string stoichs, std::string precursors)
 	}
 }
 
-void Input::validate_weights(int nulcols) {
+void Input::validate_weights(int nulcols, int nulnegs) {
 	std::ifstream fconfig(CONFIGPATH);
 	std::string confline;
 	std::vector<std::pair<std::string, double>> confvals;
@@ -360,140 +374,72 @@ void Input::validate_weights(int nulcols) {
 	}
 	else {
 		_self.options.recache_margin_weights = true;
-		std::cout << "Couldn't find margin weights file" << std::endl;
+		std::cout << "Couldn't find margin weights file, generating a new one" << std::endl;
 	}
 
+	//experimental - dynamic drange based on samples
+	// so amount of weights = (drange+1)^2, which must be > nr of samples
+	// we also need to account for negative vectors which might skew the results and 
+	// leave us with just a tiny fraction of initial generated weights
+	if (_self.debug == true) {
+		int wsize = std::pow(_self.drange + 1, 2);
+		int adjrange = _self.drange + 1;
+		if (wsize < _self.samples) {
+			do {
+				wsize = std::pow(++adjrange, 2);
+			} while (wsize < _self.samples);
+			//--adjrange;
+		}
+		else {
+			do {
+				wsize = std::pow(--adjrange, 2);
+			} while (wsize > _self.samples);
+			++adjrange;
+		}
+		_self.drange = adjrange + nulnegs / nulcols;
+		std::cout << "Adjusted drange was set to: " << _self.drange << std::endl;
+	}
+
+	// generate new wegihts if needed or load old ones
 	if (_self.options.recache_margin_weights == true) {
 		std::vector<double> fvals;
 		fvals.push_back(1);
-		for (int i = 1; i <= _self.drange; ++i) {
+		for (int i = 2; i <= _self.drange; ++i) {
 			fvals.push_back(1.f / i);
 		}
 		fvals.push_back(0);
-		//std::cout << std::endl;
-
-		//std::cout << "FVALS: " << fvals.size() << std::endl;
 
 		std::vector<std::vector<double>> i_am_speed;
-		utils::for_each_combination(fvals, nulcols, [&](std::vector<double> &gp) {
+		math::for_each_combination(fvals, nulcols, [&](std::vector<double> &gp) {
 			i_am_speed.push_back(gp);
 		});
 		_self.weights = i_am_speed;
-		//auto nprk = utils::permutation_mapk(fvals, K.cols());
-		//_self.weights = utils::combination_k(fvals, nulcols);
-		/*if (mass_weights == false) {
-			//std::cout << "Recaching margin weights... " << std::endl;
-			std::vector<double> fvals;
-			for (double i = 0; i < 1; i += _self.margin) {
-				fvals.push_back(i);
-				//std::cout << i << " ";
-			}
-			fvals.push_back(1);
-			//std::cout << std::endl;
+		
+		if (_self.debug) {
+			// (k+n-1)! / (k!(n-1)!) comb with rep
+			double vf = static_cast<double>(boost::math::factorial<double>(nulcols + fvals.size() - 1))
+				/ (boost::math::factorial<double>(nulcols) * boost::math::factorial<double>(fvals.size() - 1));
 
-			//std::cout << "FVALS: " << fvals.size() << std::endl;
-
-			//auto nprk = utils::permutation_mapk(fvals, K.cols());
-			_self.weights = utils::combination_k(fvals, nulcols);
-		}*/
-		/*else {
-			double min_mass_ratio = 1.f / _self.r.mass();
-
-			// doing this the ugly way
-			std::vector<double> fvals;
-			fvals.push_back(0);
-			for (double i = min_mass_ratio; i < 1; i += _self.margin) {
-				fvals.push_back(i);
-				//std::cout << i << " ";
-			}
-			fvals.push_back(1);
-			_self.weights = utils::combination_k(fvals, nulcols);
-
-			// trim uneeded parts
-			for (int i = 0; i < min_weights.size(); ++i) {
-				for (auto it = _self.weights.begin(); it != _self.weights.end();) {
-					if ((*it)[i] < min_weights[i]) {
-						it = _self.weights.erase(it);
-					}
-					else {
-						++it;
-					}
-				}
-			}
-		}*/
-		//prk = utils::permutation_mapk(fvals, K.cols());
+			std::cout << "Combinations of n: " << fvals.size() << ", k: " << nulcols <<" generated: " << i_am_speed.size() << std::endl;
+			std::cout << "Expected (k+n-1)! / (k!(n-1)!) : " << vf << std::endl; 
+			// turns out i_am_speed's size is eq to fvals.size() ^ 2 instead of comb formula
+		}
+		
 
 		std::ofstream g(WEIGHTSCACHEPATH);
-		//std::cout << "Contrain space was set to: " << constrain_space << std::endl;
 		for (auto& cv : _self.weights) {
 			for (auto cvv : cv) {
 				g << cvv << " ";
 			}
-			g << "\n";
-			for (int i = static_cast<int>(cv.size()) - 1; i >= 0; --i) {
-				g << cv[i] << " ";
+			g << '\n';
+			if (_self.mweights) {
+				for (int i = static_cast<int>(cv.size()) - 1; i >= 0; --i) {
+					g << cv[i] << " ";
+				}
+				g << '\n';
 			}
-			g << "\n";
 		}
-		/*if (constrain_space == false) {
-			for (auto& cv : _self.weights) {
-				for (auto cvv : cv) {
-					g << cvv << " ";
-				}
-				g << "\n";
-				for (int i = static_cast<int>(cv.size()) - 1; i >= 0; --i) {
-					g << cv[i] << " ";
-				}
-				g << "\n";
-			}
-		}*/
-		/*else {
-			std::random_device dev; // seed
-			std::default_random_engine rng(dev());
-			std::uniform_int_distribution<int> uniform_distribution(0, _self.weights.size());
-			//std::cout << 0 << " " << _self.weights.size() << std::endl;
-			//std::vector<std::vector<double>> cvc;
-			//cvc.push_back(_self.weights[0]);
-			int mean = uniform_distribution(rng);
-			std::vector<int> seeds;
-			for (int i = 0; i < _self.samples; ++i) { seeds.push_back(i); }
-			std::seed_seq seed2(seeds.begin(), seeds.end());
-			std::mt19937 e2(seed2);
-			std::normal_distribution<> normal_dist(mean, _self.samples / 10); // range of vary
-			std::vector<int> seeds3;
-			for (int i = 0; i <= _self.samples * 100; ++i) {
-				seeds3.push_back(std::round(normal_dist(e2)));
-			}
-			std::sort(seeds3.begin(), seeds3.end());
-			std::vector<int> indices;
-			int num_s = _self.samples;
-			auto seed_endit = seeds3.end();
-			for (int i = seeds3.size() - 1; i >= seeds3.size() - 1 - _self.samples; --i) {
-				//std::cout << *(seed_endit - num_s) << std::endl;
-				indices.push_back(seeds3[i]);
-				//num_s--;
-			}
-			for (int i = 0; i <= _self.samples; ++i) {
-				//std::vector<double> cv;
-				//do {
-				auto ran = uniform_distribution(rng);
-				//std::cout << ran << std::endl;
-				auto cv = _self.weights[indices[i]];//_self.weights[ran]; //rando
-				//} while (std::find(cvc.begin(), cvc.end(), cv) != cvc.end());
-				//cvc.push_back(cv);
-
-				for (auto cvv : cv) {
-					g << cvv << " ";
-				}
-				g << "\n";
-				for (int i = static_cast<int>(cv.size()) - 1; i >= 0; --i) {
-					g << cv[i] << " ";
-				}
-				g << "\n";
-			}
-		}*/
 		g.close();
-		//std::cout << "Margin weights recached." << std::endl;
 
 		// adjust config values;
 		for (int i = 0; i < confvals.size(); ++i) {
@@ -597,7 +543,7 @@ std::vector<std::pair<Eigen::MatrixXd, Eigen::VectorXd>> Input::matrix()
 	return {};
 }
 
-const Input::IOdata& Input::operator()() const {
+const Input::IOdata& Input::operator()() const{
 	return _self;
 }
 

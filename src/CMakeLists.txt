@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 # set the project name and version
-project(Samply VERSION 1.0)
+project(samply VERSION 1.0)
 
 set(CMAKE_TOOLCHAIN_FILE $ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake CACHE STRING "")
 set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "")

@@ -2,6 +2,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <vector>
 
 namespace utils {
 	inline void ncout(double n, std::ostream& out = std::cout, int spacing = 8, std::string extra = "", bool nline = false) {
@@ -17,8 +18,8 @@ namespace utils {
 		} while (ni != 0);
 
 		//std::cout << "@" << s << "@";
-
-		out << std::setw(spacing - s) << " ";
+		spacing -= s;
+		out << std::setw(spacing) << " ";
 
 		out << n << " " << extra;
 		if (nline)
@@ -50,15 +51,6 @@ namespace utils {
 		return nset;
 	}
 
-	inline int fact(int n)
-	{
-		int result = 1;
-		while (n > 1) {
-			result *= n--;
-		}
-		return result;
-	}
-
 	template <typename T>
 	void permutation(std::vector<T> v)
 	{
@@ -83,7 +75,8 @@ namespace utils {
 			*last = first_value;
 		} while (last != first);
 		return false;
-	}	template < class BidirectionalIterator, class T >
+	}
+	template < class BidirectionalIterator, class T >
 	bool prev_mapping(BidirectionalIterator first, BidirectionalIterator last, T first_value, T last_value)
 	{
 		if (last == first) {
@@ -161,19 +154,5 @@ namespace utils {
 			}
 			std::cout << std::endl;
 		} while (increase(bitset));
-	}
-
-	template<typename V, typename Callable>
-	void for_each_combination(V &v, size_t gp_sz, Callable f) {
-		V gp(gp_sz);
-		auto total_n = std::pow(v.size(), gp.size());
-		for (auto i = 0; i < total_n; ++i) {
-			auto n = i;
-			for (auto j = 0ul; j < gp.size(); ++j) {
-				gp[gp.size() - j - 1] = v[n % v.size()];
-				n /= v.size();
-			}
-			f(gp);
-		}
 	}
 }
