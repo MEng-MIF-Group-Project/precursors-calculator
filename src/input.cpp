@@ -9,7 +9,7 @@ Input::Input(int argc, char** argv)
 	try {
 		boost::program_options::options_description desc("Allowed options");
 		boost::program_options::variables_map vm;
-		
+
 		desc.add_options()
 			("help", "Show command and syntax usage")
 			("stoichs", boost::program_options::value<std::string>(), "Stoichiometry of the desired elements")
@@ -34,7 +34,7 @@ Input::Input(int argc, char** argv)
 		}
 		if (vm.count("samples")) {
 			_self.samples = vm["samples"].as<int>();
-			std::cout << "Number of samples set to " << _self.samples << std::endl; 
+			std::cout << "Number of samples set to " << _self.samples << std::endl;
 		}
 		if (vm.count("dmass")) {
 			_self.dmass = vm["dmass"].as<double>();
@@ -95,7 +95,7 @@ Input::Input(int argc, char** argv)
 			}
 		}
 	}
-	catch (std::exception& e) {
+	catch (std::exception & e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 	}
 	catch (...) {
@@ -113,20 +113,28 @@ Input::Input(int argc, char** argv)
 	_self.mode = 1;
 #endif
 	std::cout << "Recache margin weights was set to " << _self.options.recache_margin_weights << std::endl;
-	if (_self.mode == 0) {
-		if (_self.options.use_input_cache == true) {
-			parse(INPUTCACHEPATH);
-		}
-		else {
-			parse(_self.cmd_input_stoichs, "");
+	if (_self.debug == true) {
+		parse(_self.cmd_input_stoichs);
+		if (_self.mode == 1) {
+			parse(_self.cmd_input_precursors);
 		}
 	}
-	else if (_self.mode == 1) {
-		if (_self.options.use_input_cache == true) {
-			parse(INPUTCACHEPATH);
+	else {
+		if (_self.mode == 0) {
+			if (_self.options.use_input_cache == true) {
+				parse(INPUTCACHEPATH);
+			}
+			else {
+				parse(_self.cmd_input_stoichs, "");
+			}
 		}
-		else {
-			parse(_self.cmd_input_stoichs, _self.cmd_input_precursors);
+		else if (_self.mode == 1) {
+			if (_self.options.use_input_cache == true) {
+				parse(INPUTCACHEPATH);
+			}
+			else {
+				parse(_self.cmd_input_stoichs, _self.cmd_input_precursors);
+			}
 		}
 	}
 
@@ -137,70 +145,50 @@ Input::Input(std::string f) {
 	parse(f);
 }
 
-void Input::parse(std::string f) {
-	// Line split
-	std::vector<std::string> ld;
-	std::ifstream file(f);
-
-	std::string line;
-	while (std::getline(file, line)) {
-		ld.push_back(line);
-	}
-
-	// Line Parsing
-	// 0. Reserved
-	// 1. List of Elements
-	// 2. Available reagents
+void Input::parse(std::string content) {
 	boost::char_separator<char> s0(" ");
-	boost::char_separator<char> s1(":");
-	boost::tokenizer<boost::char_separator<char>> t1(ld[1], s0);
 
-	// Retrieve name of elements
-	for (const auto& t : t1) {
-		boost::tokenizer<boost::char_separator<char>> t2_0(t, s1);
-		for (const auto& m : t2_0) {
-			int c = 0;
-			const auto r = m.find('#');
-			if (r == std::string::npos) {
-				_self.elements.push_back(m);
-				_self.amounts.push_back(1);
-				_self.r.insert(Element(m, 1));
-			}
-			else {
-				const std::string n = m.substr(0, r);
-
-				std::stringstream ss;
-				ss << m.substr(r + 1);
-				ss >> c;
-
-				_self.elements.push_back(n);
-				_self.amounts.push_back(c);
-				_self.r.insert(Element(n, c));
-			}
-		}
-	}
-
-	boost::tokenizer<boost::char_separator<char>> t2(ld[2], s0);
+	boost::tokenizer<boost::char_separator<char>> t2(content, s0);
+	int tsize = std::distance(t2.begin(), t2.end());
 	for (const auto& t : t2) {
-		boost::tokenizer<boost::char_separator<char>> t2_0(t, s1);
 		Reagent reagent;
-		for (const auto& m : t2_0) {
-			int c = 0;
-			const auto r = m.find('#');
-			if (r == std::string::npos) {
-				reagent.insert(Element(m, 1));
+		boost::regex re("[A-Z][a-z]?");
+		boost::sregex_token_iterator ti(t.begin(), t.end(), re, { -1, 0 });
+
+		std::vector<std::string> tokens;
+		std::remove_copy_if(ti, boost::sregex_token_iterator(), std::back_inserter(tokens), [](std::string const& s) { return s.empty(); });
+		int last_type = 2;
+		std::vector<std::string> elements;
+		std::vector<int> amounts;
+		for (auto& p : tokens) {
+			if (std::isdigit(p[0])) {
+				int amount;
+				std::stringstream(p) >> amount;
+
+				amounts.push_back(amount);
+				last_type = 2;
 			}
 			else {
-				const std::string n = m.substr(0, r);
-
-				std::stringstream ss;
-				ss << m.substr(r + 1);
-				ss >> c;
-
-				reagent.insert(Element(n, c));
+				if (last_type == 1) {
+					amounts.push_back(1);
+				}
+				elements.push_back(p);
+				last_type = 1;
 			}
 		}
-		_self.rdb.insert(reagent);
+		if (last_type == 1) {
+			amounts.push_back(1);
+		}
+		for (int i = 0; i < elements.size(); ++i) {
+			reagent.insert(Element(elements[i], amounts[i]));
+		}
+
+		if (tsize == 1) {
+			_self.r = reagent;
+		}
+		else {
+			_self.rdb.insert(reagent);
+		}
 	}
 
 	if (_self.mode == 0) {
@@ -209,6 +197,12 @@ void Input::parse(std::string f) {
 			re.insert(e);
 			_self.rdb.insert(re);
 		}
+
+		for (auto rs : _self.rdb()) {
+			rs.str();
+		}
+
+		_self.r.str();
 	}
 }
 

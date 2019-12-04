@@ -58,8 +58,8 @@ public:
 	Input(int argc, char** argv);
 	// initialise input arguments from file, TODO: does this have a purpose?
 	Input(std::string f);
-	// load input data from file f
-	void parse(std::string f);
+	// load input data from a string
+	void parse(std::string content);
 	// load input data based on cli arguments
 	void parse(std::string stoichs, std::string precursors);
 
