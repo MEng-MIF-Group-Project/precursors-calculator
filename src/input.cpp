@@ -102,7 +102,7 @@ Input::Input(int argc, char** argv)
 		std::cerr << "Exception of unknown type!" << std::endl;
 	}
 #else if
-	_self.samples = 100;
+	_self.samples = 1000;
 	_self.cmd_input_stoichs = "LiAlSO";
 	_self.cmd_input_precursors = "Li2S Al2S3 Al2O3 LiAlO2 Li2O";
 	//_self.margin = 0.003;
@@ -111,6 +111,7 @@ Input::Input(int argc, char** argv)
 	_self.options.recache_margin_weights = true;
 	//_self.options.use_input_cache = true;
 	_self.mode = 1;
+	_self.debug = true;
 #endif
 	std::cout << "Recache margin weights was set to " << _self.options.recache_margin_weights << std::endl;
 	if (_self.debug == true) {
@@ -394,12 +395,15 @@ void Input::validate_weights(int nulcols, int nulnegs) {
 		std::cout << "Adjusted drange was set to: " << _self.drange << std::endl;
 	}
 
+	// include stuff from 0.5 up to 1
 	// generate new wegihts if needed or load old ones
 	if (_self.options.recache_margin_weights == true) {
 		std::vector<double> fvals;
-		fvals.push_back(1);
+		//fvals.push_back(1);
+		double halfpoint = 0.5f;
 		for (int i = 2; i <= _self.drange; ++i) {
 			fvals.push_back(1.f / i);
+			fvals.push_back(1.f / i + halfpoint);
 		}
 		fvals.push_back(0);
 

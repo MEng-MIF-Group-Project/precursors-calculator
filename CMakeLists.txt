@@ -9,29 +9,29 @@ set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "")
 #set(Boost_NO_BOOST_CMAKE ON)
 
 set(SOURCE
-    ${CMAKE_CURRENT_SOURCE_DIR}/element.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/elementdb.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/input.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/reagent.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/reagentdb.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/samply.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/solution.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/solutiondb.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/statedb.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/element.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/elementdb.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/reagent.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/reagentdb.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/samply.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/solution.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/solutiondb.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/statedb.cpp
 )
 
 set(HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/defines.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/element.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/elementdb.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/input.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/math.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/reagent.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/reagentdb.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/solution.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/solutiondb.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/statedb.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/utils.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/defines.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/element.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/elementdb.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/input.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/math.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/reagent.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/reagentdb.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/solution.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/solutiondb.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/statedb.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.h
 )
 
 set(CMAKE_BUILD_TYPE "Release")
